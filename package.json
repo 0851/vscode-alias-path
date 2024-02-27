@@ -1,0 +1,90 @@
+{
+  "name": "vscode-alias-path",
+  "displayName": "alias-path",
+  "description": "vscode alias path go to definition",
+  "version": "0.0.0",
+  "publisher": "0851",
+  "engines": {
+    "vscode": "^1.30.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "types": "index.d.ts",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension",
+  "readme": "https://github.com/0851/vscode-alias-path/blob/master/README.md",
+  "contributes": {
+    "configuration": {
+      "title": "aliaspath",
+      "properties": {
+        "aliaspath.alias": {
+          "type": "object",
+          "default": {
+            "@": "${cwd}/src",
+            "~": "${cwd}/src",
+            "~~": "${cwd}/srcnew"
+          },
+          "description": "你可以使用${cwd}代表当前工作目录的绝对路径"
+        },
+        "aliaspath.activeLanguages": {
+          "type": [
+            "array",
+            "object",
+            "string"
+          ],
+          "default": {
+            "pattern": "**"
+          },
+          "description": "支持激活语言"
+        },
+        "aliaspath.configFile": {
+          "type": "string",
+          "default": ".aliaspath.json",
+          "description": "项目根目录下的配置文件"
+        },
+        "aliaspath.maxDependFileSize": {
+          "type": "number",
+          "default": 2,
+          "description": "依赖文件最大大小 MB"
+        },
+        "aliaspath.allowedExt": {
+          "type": "array",
+          "default": [
+            "js",
+            "ts",
+            "tsx",
+            "jsx",
+            "vue"
+          ],
+          "description": "允许忽略的扩展名列表"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "test": "yarn run compile && node ./node_modules/vscode/bin/test",
+    "format": "prettier"
+  },
+  "devDependencies": {
+    "@types/css-tree": "^2.3.6",
+    "@types/node": "^8.10.25",
+    "ts-node": "^8.4.1",
+    "vscode": "^1.1.37"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0851/vscode-alias-path"
+  },
+  "homepage": "https://github.com/0851/vscode-alias-path/blob/master/README.md",
+  "dependencies": {
+    "css-tree": "^2.3.1",
+    "typescript": "^5.3.3"
+  }
+}
