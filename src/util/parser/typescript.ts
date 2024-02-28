@@ -42,7 +42,7 @@ function traverse(
 
 function createToken(
   source: SourceFileLike,
-  whereNode: any,
+  whereNode: Node,
   keyword: string,
   filepath: string
 ): TokenItem {
