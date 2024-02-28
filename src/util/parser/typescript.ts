@@ -40,15 +40,29 @@ function traverse(
   });
 }
 
+function createToken(
+  source: SourceFileLike,
+  whereNode: any,
+  keyword: string,
+  filepath: string
+): TokenItem {
+  const start1 = getLineAndCharacterOfPosition(source, whereNode.getStart());
+  const end1 = getLineAndCharacterOfPosition(source, whereNode.getEnd());
+  const start = new Position(start1.line, start1.character);
+  const end = new Position(end1.line, end1.character);
+  return {
+    filepath,
+    keyword,
+    start,
+    end
+  }
+}
 function getExportKeyword(
   node: Node,
-  tokenList: TokenItem[],
+  tokenList: (TokenItem | undefined)[],
   options: TraverseOption,
 ) {
   try {
-    let keyword: string | undefined = ''
-    let start: Position | undefined = undefined;
-    let end: Position | undefined = undefined;
     const fnnode = (node as FunctionDeclaration);
     const exnode = (node as ExportDeclaration)
     const exportClause = exnode.exportClause
@@ -59,61 +73,94 @@ function getExportKeyword(
 
     if (findExpord) {
       if (fnnode.name) {
-        keyword = fnnode.name.getText();
-        const start1 = getLineAndCharacterOfPosition(options.source, fnnode.name.getStart());
-        const end1 = getLineAndCharacterOfPosition(options.source, fnnode.name.getEnd());
-        start = new Position(start1.line, start1.character);
-        end = new Position(end1.line, end1.character);
+        tokenList.push(createToken(
+          options.source,
+          fnnode.name,
+          fnnode.name.getText(),
+          options.filepath
+        ))
       }
       if (findDefault && options.defaultName) {
-        keyword = options.defaultName;
-        const start1 = getLineAndCharacterOfPosition(options.source, findDefault.getStart());
-        const end1 = getLineAndCharacterOfPosition(options.source, findDefault.getEnd());
-        start = new Position(start1.line, start1.character);
-        end = new Position(end1.line, end1.character);
+        tokenList.push(createToken(
+          options.source,
+          findDefault,
+          options.defaultName,
+          options.filepath
+        ))
+
       }
       const declarations: VariableDeclaration[] = (fnnode as any).declarationList?.declarations;
       if (declarations?.length) {
         declarations.forEach((declaration: VariableDeclaration) => {
-          keyword = declaration.name.getText();
-          const start1 = getLineAndCharacterOfPosition(options.source, declaration.getStart());
-          const end1 = getLineAndCharacterOfPosition(options.source, declaration.getEnd());
-          start = new Position(start1.line, start1.character);
-          end = new Position(end1.line, end1.character);
+          tokenList.push(createToken(
+            options.source,
+            declaration.name,
+            declaration.name.getText(),
+            options.filepath
+          ))
         });
       }
 
     } else if (exportClause) {
       if ((exportClause as NamespaceExport).name) {
         const name = (exportClause as NamespaceExport).name
-        keyword = name.getText();
-        const start1 = getLineAndCharacterOfPosition(options.source, name.getStart());
-        const end1 = getLineAndCharacterOfPosition(options.source, name.getEnd());
-        start = new Position(start1.line, start1.character);
-        end = new Position(end1.line, end1.character);
+        tokenList.push(createToken(
+          options.source,
+          name,
+          name.getText(),
+          options.filepath
+        ))
       }
       if ((exportClause as NamedExports).elements) {
         const elements = (exportClause as NamedExports).elements
         elements.forEach((element) => {
-          keyword = element.name.getText();
-          const start1 = getLineAndCharacterOfPosition(options.source, element.name.getStart());
-          const end1 = getLineAndCharacterOfPosition(options.source, element.name.getEnd());
-          start = new Position(start1.line, start1.character);
-          end = new Position(end1.line, end1.character);
+          tokenList.push(createToken(
+            options.source,
+            element.name,
+            element.name.getText(),
+            options.filepath
+          ))
         });
       }
     }
-
-    if (keyword !== undefined
-      && start !== undefined
-      && end !== undefined) {
-      tokenList.push({
-        filepath: options.filepath,
-        keyword,
-        start,
-        end
-      })
+    if (node.kind === SyntaxKind.Identifier
+      && node.getText() === 'module') {
+      const name = (node.parent as any).name
+      if (name === 'exports') {
+        const properties = (node.parent as any).right?.properties
+        if (properties?.length) {
+          properties.forEach((prop: any) => {
+            if (prop.name) {
+              tokenList.push(createToken(
+                options.source,
+                prop.name,
+                prop.name.getText(),
+                options.filepath
+              ))
+            }
+          })
+        }
+        tokenList.push(createToken(
+          options.source,
+          name,
+          options.defaultName || '',
+          options.filepath
+        ))
+      }
     }
+    if (node.kind === SyntaxKind.Identifier
+      && node.getText() === 'exports') {
+      const name = (node.parent as any).name
+      if (name) {
+        tokenList.push(createToken(
+          options.source,
+          name,
+          name.getText(),
+          options.filepath
+        ))
+      }
+    }
+
     return tokenList;
   } catch (error) {
   }
@@ -190,5 +237,6 @@ export default function genTokens(
       defaultName: importDefaultName
     }
   );
-  return exportKeywordList;
+
+  return exportKeywordList
 }
