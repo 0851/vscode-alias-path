@@ -65,16 +65,11 @@
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "build": "npm run compile",
+    "build": "npm run compile && vsce package",
     "watch": "tsc -watch -p ./",
     "postinstall": "node ./node_modules/vscode/bin/install",
     "test": "npm run compile && node ./node_modules/vscode/bin/test",
-    "format": "prettier",
-    "release": "npm run release-patch",
-    "prelease": "npm run build && npm version prerelease && vsce package && git commit -am 'build: --other=build' && git push --tags --force && git push",
-    "release-patch": "npm run build && npm version patch && vsce package && git commit -am 'build: --other=build' && git push --tags --force && git push",
-    "release-minor": "npm run build && npm version minor && vsce package && git commit -am 'build: --other=build' && git push --tags --force && git push",
-    "release-major": "npm run build && npm version major && vsce package && git commit -am 'build: --other=build' && git push --tags --force && git push"
+    "format": "prettier"
   },
   "devDependencies": {
     "@types/css-tree": "^2.3.6",
