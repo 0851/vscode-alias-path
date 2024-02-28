@@ -16,10 +16,9 @@ import path from 'path';
 import { Position } from 'vscode';
 
 type TraverseOption = {
-  source: SourceFileLike,
-  needParams: boolean,
   filepath: string,
   defaultName?: string,
+  getPosition: (offset: number) => Position
 }
 function traverse(
   node: Node,
@@ -41,17 +40,14 @@ function traverse(
 }
 
 function createToken(
-  source: SourceFileLike,
   whereNode: Node,
   keyword: string,
-  filepath: string
+  options: TraverseOption
 ): TokenItem {
-  const start1 = getLineAndCharacterOfPosition(source, whereNode.getStart());
-  const end1 = getLineAndCharacterOfPosition(source, whereNode.getEnd());
-  const start = new Position(start1.line, start1.character);
-  const end = new Position(end1.line, end1.character);
+  const start = options.getPosition(whereNode.getStart());
+  const end = options.getPosition(whereNode.getEnd());
   return {
-    filepath,
+    filepath: options.filepath,
     keyword,
     start,
     end
@@ -74,18 +70,16 @@ function getExportKeyword(
     if (findExpord) {
       if (fnnode.name) {
         tokenList.push(createToken(
-          options.source,
           fnnode.name,
           fnnode.name.getText(),
-          options.filepath
+          options,
         ))
       }
       if (findDefault && options.defaultName) {
         tokenList.push(createToken(
-          options.source,
           findDefault,
           options.defaultName,
-          options.filepath
+          options
         ))
 
       }
@@ -93,10 +87,9 @@ function getExportKeyword(
       if (declarations?.length) {
         declarations.forEach((declaration: VariableDeclaration) => {
           tokenList.push(createToken(
-            options.source,
             declaration.name,
             declaration.name.getText(),
-            options.filepath
+            options
           ))
         });
       }
@@ -105,20 +98,18 @@ function getExportKeyword(
       if ((exportClause as NamespaceExport).name) {
         const name = (exportClause as NamespaceExport).name
         tokenList.push(createToken(
-          options.source,
           name,
           name.getText(),
-          options.filepath
+          options
         ))
       }
       if ((exportClause as NamedExports).elements) {
         const elements = (exportClause as NamedExports).elements
         elements.forEach((element) => {
           tokenList.push(createToken(
-            options.source,
             element.name,
             element.name.getText(),
-            options.filepath
+            options
           ))
         });
       }
@@ -132,19 +123,17 @@ function getExportKeyword(
           properties.forEach((prop: any) => {
             if (prop.name) {
               tokenList.push(createToken(
-                options.source,
                 prop.name,
                 prop.name.getText(),
-                options.filepath
+                options
               ))
             }
           })
         }
         tokenList.push(createToken(
-          options.source,
           name,
           options.defaultName || '',
-          options.filepath
+          options
         ))
       }
     }
@@ -153,16 +142,65 @@ function getExportKeyword(
       const name = (node.parent as any).name
       if (name) {
         tokenList.push(createToken(
-          options.source,
           name,
           name.getText(),
-          options.filepath
+          options
         ))
       }
     }
-
+    if(node.kind === SyntaxKind.ExportAssignment){
+      tokenList.push(createToken(
+        node,
+        options.defaultName || '',
+        options
+      ))
+    }
     return tokenList;
   } catch (error) {
+  }
+}
+
+
+function vue(
+  filepath: string,
+  source: SourceFileLike,
+  content: string,
+  importDefaultName: string,
+  exportKeywordList: TokenItem[]
+) {
+  let reg = /(?<=\<script[\s\S]*?\>)([\s\S]*?)(?=<\/script\>)/g
+  let m;
+  while ((m = reg.exec(content)) !== null) {
+    const start = m.index
+    if (start === reg.lastIndex) {
+      reg.lastIndex++;
+    }
+    const scriptcontent = m[1]
+    if (!scriptcontent) {
+      return;
+    }
+    const innersource = createSourceFile(
+      filepath,
+      scriptcontent,
+      ScriptTarget.ESNext,
+      true,
+      ScriptKind.TSX
+    );
+
+    traverse(
+      innersource,
+      exportKeywordList,
+      0,
+      {
+        filepath,
+        defaultName: importDefaultName,
+        getPosition: (offset: number) => {
+          const pos = getLineAndCharacterOfPosition(source, start + offset)
+          return new Position(pos.line, pos.character);
+        }
+      }
+    );
+    console.log(m, '===m==');
   }
 }
 
@@ -172,6 +210,9 @@ test = `
     export { myFunction as function1, myVariable as variable };
     export default function () {}
     export default class {}
+    export default {
+      asdd: 'asdd'
+    }
     exports.name = "asdd"
     module.exports = {dd: 'asdd'}
     module.exports.name = {asddd: 'asdd'}
@@ -203,40 +244,36 @@ export default function genTokens(
   if (/jsx?$/.test(ext)) {
     kind = ScriptKind.JSX
   }
+
   // content = `
-  // export { myFunction as function1, myVariable as variable };
-  // export default function () {}
-  // export default class {}
-  // exports.name = "asdd"
-  // module.exports = {dd: 'asdd'}
-  // module.exports.name = {asddd: 'asdd'}
-  // export const name = "asddd"
-  // export let test = ()=> {}
-  // export var sdkj = /sdd/g
-  // export { default as DefaultExport } from "bar.js";
-  // export { cube, foo, graph };
-  // export default function cube(x) {
-  //   return x * x * x;
+  // export default {
+  //   asdd: 'asdd'
   // }
   // `
-  const result = createSourceFile(
+
+  const source = createSourceFile(
     filepath,
     content,
     ScriptTarget.ESNext,
     true,
     kind
   );
+
   traverse(
-    result,
+    source,
     exportKeywordList,
     0,
     {
-      needParams: true,
       filepath,
-      source: result,
-      defaultName: importDefaultName
+      defaultName: importDefaultName,
+      getPosition: (offset: number) => {
+        const pos = getLineAndCharacterOfPosition(source, offset)
+        return new Position(pos.line, pos.character);
+      }
     }
   );
+
+  vue(filepath, source, content, importDefaultName || '', exportKeywordList)
 
   return exportKeywordList
 }

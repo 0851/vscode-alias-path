@@ -27,8 +27,8 @@ export function getTokens(filepath: string,
   const content = fs.readFileSync(filepath, 'utf-8');
 
   const tokens = [
-    ...tryTypescriptTokens(filepath, content),
-    ...tryCssTokens(filepath, content)
+    ...tryTypescriptTokens(filepath, content, config.importDefaultName),
+    ...tryCssTokens(filepath, content, config.importDefaultName)
   ];
 
   return tokens
