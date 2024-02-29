@@ -2,7 +2,7 @@
   "name": "vscode-alias-path",
   "displayName": "alias-path",
   "description": "vscode alias path go to definition",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "0851",
   "engines": {
     "vscode": "^1.30.0"
