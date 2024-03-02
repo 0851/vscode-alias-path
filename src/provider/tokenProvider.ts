@@ -62,7 +62,9 @@ export class AliasPathTokensProvider implements TokenProvider {
     const content = document.getText();
     const depends = getDepends(content);
     const config = this.configProvider.getConfig(document.uri)
-    const dependsPaths: DependPathItem[] = [];
+    const dependsPaths: DependPathItem[] = [{
+      filepath: document.uri.fsPath,
+    }];
     depends.forEach(dep => {
       dependsPaths.push(...getRealPaths(
         dep.filepath,

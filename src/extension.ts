@@ -7,6 +7,7 @@ import {
 } from 'vscode';
 
 import { AliasPathDefinitionProvider } from './provider/definitionProvider';
+import { AliasPathCompletionItemProvider } from './provider/completionItemProvider';
 import { AliasPathConfigProvider } from './provider/configProvider';
 import { AliasPathTokensProvider } from './provider/tokenProvider';
 
@@ -42,7 +43,16 @@ export function activate(context: ExtensionContext) {
     })
   )
 
+  const disposableCompletionItemProvider = languages.registerCompletionItemProvider(
+    selector,
+    new AliasPathCompletionItemProvider(context, {
+      configProvider,
+      tokenProvider
+    })
+  )
+
   context.subscriptions.push(disposableDefinitionProvider);
+  context.subscriptions.push(disposableCompletionItemProvider);
 
 }
 
