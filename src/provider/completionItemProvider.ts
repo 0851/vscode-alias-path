@@ -104,7 +104,7 @@ export class AliasPathCompletionItemProvider implements CompletionItemProvider {
     position: Position,
     token: CancellationToken,
     context: CompletionContext): ProviderResult<CompletionItem[]> {
-    console.log(token, '=====token====');
+    // console.log(token, '=====token====');
     const regKeyWord = /[$_a-zA-Z]+[\w_-]*/;
     const range = document.getWordRangeAtPosition(position, regKeyWord);
     const keyword = document.getText(range);

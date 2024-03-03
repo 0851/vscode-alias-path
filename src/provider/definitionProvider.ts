@@ -76,15 +76,17 @@ export class AliasPathDefinitionProvider implements DefinitionProvider {
       normalized = hyphenToPascal(normalized)
     }
 
-    const findToken = tokens.find(token => {
+    const findTokens = tokens.filter(token => {
       return token.keyword === normalized;
     })
 
-    if (findToken) {
-      return new Location(
-        Uri.file(findToken.filepath),
-        findToken.start
-      )
+    if (findTokens) {
+      return findTokens.map(token=>{
+        return new Location(
+          Uri.file(token.filepath),
+          token.start
+        )
+      })
     }
 
     const zeroBasedPosition = document.offsetAt(position);

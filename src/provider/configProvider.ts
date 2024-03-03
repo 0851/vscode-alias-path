@@ -94,7 +94,7 @@ export class AliasPathConfigProvider implements ConfigProvider {
       workspaceConfig = this.workspaceConfigList[workspaceFolder.index]
     }
 
-    console.log(config, this.context, '====config===');
+    // console.log(config, this.context, '====config===');
 
     let activeLanguages = config.get<DocumentSelector>('activeLanguages')!;
     let autoSuggestion = config.get<boolean>('autoSuggestion')!;

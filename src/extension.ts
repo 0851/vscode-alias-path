@@ -15,7 +15,7 @@ let configProvider: ConfigProvider | undefined = undefined;
 let tokenProvider: TokenProvider | undefined = undefined;
 
 export function activate(context: ExtensionContext) {
-  console.log(context);
+  // console.log(context);
 
   configProvider = new AliasPathConfigProvider(context);
 

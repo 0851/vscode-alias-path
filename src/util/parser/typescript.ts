@@ -5,112 +5,119 @@ import {
   SourceFileLike,
   SyntaxKind,
   ScriptKind,
-  FunctionDeclaration,
-  ExportDeclaration,
+  ModifierLike,
   getLineAndCharacterOfPosition,
-  VariableDeclaration,
+  NamedExports,
   NamespaceExport,
-  NamedExports
 } from 'typescript';
 import path from 'path';
 import { Position } from 'vscode';
+import { TokenModel } from '../../provider/tokenProvider';
 
 type TraverseOption = {
   filepath: string,
   defaultName?: string,
-  getPosition: (offset: number) => Position
 }
+
+function getPosition(source: any, node: any, ofs: number) {
+  const startOffset = node.getStart();
+  const endOffset = node.getEnd();
+  const startPos = getLineAndCharacterOfPosition(source, ofs + startOffset)
+  const endPos = getLineAndCharacterOfPosition(source, ofs + endOffset)
+  const start = new Position(startPos.line, startPos.character);
+  const end = new Position(endPos.line, endPos.character);
+  return {
+    startOffset,
+    endOffset,
+    start,
+    end,
+  };
+}
+
 function traverse(
   node: Node,
-  tokenList: TokenItem[],
+  tokenModel: TokenModel,
   depth = 0,
   options: TraverseOption
 ): void {
   getExportKeyword(
     node,
-    tokenList,
+    tokenModel,
     options);
   node.forEachChild((n: Node) => {
     traverse(n,
-      tokenList,
+      tokenModel,
       depth + 1,
       options
     );
   });
 }
 
-function createToken(
-  whereNode: Node,
-  keyword: string,
-  options: TraverseOption
-): TokenItem {
-  const start = options.getPosition(whereNode.getStart());
-  const end = options.getPosition(whereNode.getEnd());
-  return {
-    filepath: options.filepath,
-    keyword,
-    start,
-    end
-  }
-}
 function getExportKeyword(
   node: Node,
-  tokenList: (TokenItem | undefined)[],
+  tokenModel: TokenModel,
   options: TraverseOption,
 ) {
   try {
-    const fnnode = (node as FunctionDeclaration);
-    const exnode = (node as ExportDeclaration)
-    const exportClause = exnode.exportClause
 
-    const modifiers = fnnode.modifiers;
-    const findExpord = modifiers?.find(mod => mod.kind === SyntaxKind.ExportKeyword);
+    const fnnode = (node as any);
+    const exportClause = fnnode.exportClause;
+    const modifiers = fnnode.modifiers as ModifierLike[];
     const findDefault = modifiers?.find(mod => mod.kind === SyntaxKind.DefaultKeyword);
+    if (fnnode.name
+      && ![
+        SyntaxKind.TypeParameter,
+        SyntaxKind.Parameter,
+        SyntaxKind.BindingElement,
+        SyntaxKind.ShorthandPropertyAssignment,
+        SyntaxKind.SetAccessor,
+        SyntaxKind.GetAccessor,
+        SyntaxKind.NamedTupleMember,
+        SyntaxKind.PropertyAccessExpression,
+        SyntaxKind.MetaProperty,
+        SyntaxKind.JsxAttribute,
+        SyntaxKind.EnumMember,
+        SyntaxKind.PropertySignature,
+        SyntaxKind.PropertyDeclaration,
+        SyntaxKind.PropertyAssignment,
+      ].includes(fnnode.kind)
+      && ![
+        SyntaxKind.ObjectBindingPattern
+      ].includes(fnnode.name.kind)
+    ) {
+      tokenModel.add(
+        fnnode.name,
+        fnnode.name.getText(),
+      )
+    }
+    if (findDefault && options.defaultName) {
+      tokenModel.add(
+        findDefault,
+        options.defaultName || ''
+      )
+    }
+    if (fnnode.kind === SyntaxKind.ExportAssignment && options.defaultName) {
+      tokenModel.add(
+        fnnode,
+        options.defaultName || ''
+      )
+    }
 
-    if (findExpord) {
-      if (fnnode.name) {
-        tokenList.push(createToken(
-          fnnode.name,
-          fnnode.name.getText(),
-          options,
-        ))
-      }
-      if (findDefault && options.defaultName) {
-        tokenList.push(createToken(
-          findDefault,
-          options.defaultName,
-          options
-        ))
-
-      }
-      const declarations: VariableDeclaration[] = (fnnode as any).declarationList?.declarations;
-      if (declarations?.length) {
-        declarations.forEach((declaration: VariableDeclaration) => {
-          tokenList.push(createToken(
-            declaration.name,
-            declaration.name.getText(),
-            options
-          ))
-        });
-      }
-
-    } else if (exportClause) {
+    if (exportClause) {
       if ((exportClause as NamespaceExport).name) {
         const name = (exportClause as NamespaceExport).name
-        tokenList.push(createToken(
+        tokenModel.add(
           name,
-          name.getText(),
-          options
-        ))
+          name.getText()
+        )
       }
       if ((exportClause as NamedExports).elements) {
         const elements = (exportClause as NamedExports).elements
         elements.forEach((element) => {
-          tokenList.push(createToken(
+          tokenModel.add(
             element.name,
-            element.name.getText(),
-            options
-          ))
+            element.name.getText()
+          )
         });
       }
     }
@@ -122,44 +129,32 @@ function getExportKeyword(
         if (properties?.length) {
           properties.forEach((prop: any) => {
             if (prop.name) {
-              tokenList.push(createToken(
+              tokenModel.add(
                 prop.name,
-                prop.name.getText(),
-                options
-              ))
+                prop.name.getText()
+              )
             }
           })
         }
-        tokenList.push(createToken(
+        tokenModel.add(
           name,
-          options.defaultName || '',
-          options
-        ))
+          options.defaultName || ''
+        )
       }
     }
     if (node.kind === SyntaxKind.Identifier
       && node.getText() === 'exports') {
       const name = (node.parent as any).name
       if (name) {
-        tokenList.push(createToken(
+        tokenModel.add(
           name,
-          name.getText(),
-          options
-        ))
+          name.getText()
+        )
       }
     }
-    if(node.kind === SyntaxKind.ExportAssignment){
-      tokenList.push(createToken(
-        node,
-        options.defaultName || '',
-        options
-      ))
-    }
-    return tokenList;
   } catch (error) {
   }
 }
-
 
 function vue(
   filepath: string,
@@ -187,44 +182,32 @@ function vue(
       ScriptKind.TSX
     );
 
+    const tokenModel = new TokenModel(
+      filepath,
+      'typescript',
+      (node: any) => {
+        return getPosition(source, node, start)
+      }
+    )
+
     traverse(
       innersource,
-      exportKeywordList,
+      tokenModel,
       0,
       {
         filepath,
-        defaultName: importDefaultName,
-        getPosition: (offset: number) => {
-          const pos = getLineAndCharacterOfPosition(source, start + offset)
-          return new Position(pos.line, pos.character);
-        }
+        defaultName: importDefaultName
       }
     );
-    console.log(m, '===m==');
+
+    exportKeywordList.push(...tokenModel.tokens);
+
+    // console.log(m, '===m==');
   }
 }
 
 /**
- * 
-test = `
-    export { myFunction as function1, myVariable as variable };
-    export default function () {}
-    export default class {}
-    export default {
-      asdd: 'asdd'
-    }
-    exports.name = "asdd"
-    module.exports = {dd: 'asdd'}
-    module.exports.name = {asddd: 'asdd'}
-    export const name = "asddd"
-    export let test = ()=> {}
-    export var sdkj = /sdd/g
-    export { default as DefaultExport } from "bar.js";
-    export { cube, foo, graph };
-    export default function cube(x) {
-      return x * x * x;
-    }
-    `
+ *
  * @param filepath 
  * @param content 
  * @param importDefaultName 
@@ -249,6 +232,22 @@ export default function genTokens(
   // export default {
   //   asdd: 'asdd'
   // }
+  // export const name = "asddd"
+  // export { myFunction as function1, myVariable as variable };
+  // export default function () {}
+  // export { A } from "./a";
+  // export default class {}
+  // exports.name = "asdd"
+  // module.exports = {dd: 'asdd'}
+  // module.exports.name = {asddd: 'asdd'}
+  // export type A = string;
+  // export let test = ()=> {}
+  // export var sdkj = /sdd/g
+  // export { default as DefaultExport } from "bar.js";
+  // export { cube, foo, graph };
+  // export default function cube(x) {
+  //   return x * x * x;
+  // }
   // `
 
   const source = createSourceFile(
@@ -259,19 +258,24 @@ export default function genTokens(
     kind
   );
 
+  const tokenModel = new TokenModel(
+    filepath,
+    'typescript',
+    (node: any) => {
+      return getPosition(source, node, 0)
+    })
+
   traverse(
     source,
-    exportKeywordList,
+    tokenModel,
     0,
     {
       filepath,
       defaultName: importDefaultName,
-      getPosition: (offset: number) => {
-        const pos = getLineAndCharacterOfPosition(source, offset)
-        return new Position(pos.line, pos.character);
-      }
     }
   );
+
+  exportKeywordList.push(...tokenModel.tokens);
 
   vue(filepath, source, content, importDefaultName || '', exportKeywordList)
 

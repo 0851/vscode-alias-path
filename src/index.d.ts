@@ -20,8 +20,12 @@ declare type DependPathItem = {
 declare type TokenItem = {
   filepath: string,
   keyword: string,
+  startOffset: number,
+  endOffset: number,
   start: import('vscode').Position
   end: import('vscode').Position
+  node: any
+  type: 'typescript' | 'css'
 }
 declare interface ConfigProvider {
   activate(): void
