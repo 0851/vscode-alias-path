@@ -76,8 +76,9 @@ export class AliasPathTokensProvider implements TokenProvider {
     this.activate();
   }
   activate() {
-    const debounceGenTokens = debounce(this.genTokens.bind(this), 500);
+    const debounceGenTokens = debounce(this.genTokens.bind(this), 800);
     window.onDidChangeActiveTextEditor((e: TextEditor | undefined) => {
+      this.tokens = [];
       debounceGenTokens.cancel();
       debounceGenTokens(e)
     })

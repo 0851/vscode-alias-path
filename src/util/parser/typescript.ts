@@ -5,7 +5,9 @@ import {
   SourceFileLike,
   SyntaxKind,
   ScriptKind,
-  ModifierLike,
+  FunctionDeclaration,
+  ExportDeclaration,
+  VariableDeclaration,
   getLineAndCharacterOfPosition,
   NamedExports,
   NamespaceExport,
@@ -60,50 +62,38 @@ function getExportKeyword(
 ) {
   try {
 
-    const fnnode = (node as any);
-    const exportClause = fnnode.exportClause;
-    const modifiers = fnnode.modifiers as ModifierLike[];
-    const findDefault = modifiers?.find(mod => mod.kind === SyntaxKind.DefaultKeyword);
-    if (fnnode.name
-      && ![
-        SyntaxKind.TypeParameter,
-        SyntaxKind.Parameter,
-        SyntaxKind.BindingElement,
-        SyntaxKind.ShorthandPropertyAssignment,
-        SyntaxKind.SetAccessor,
-        SyntaxKind.GetAccessor,
-        SyntaxKind.NamedTupleMember,
-        SyntaxKind.PropertyAccessExpression,
-        SyntaxKind.MetaProperty,
-        SyntaxKind.JsxAttribute,
-        SyntaxKind.EnumMember,
-        SyntaxKind.PropertySignature,
-        SyntaxKind.PropertyDeclaration,
-        SyntaxKind.PropertyAssignment,
-      ].includes(fnnode.kind)
-      && ![
-        SyntaxKind.ObjectBindingPattern
-      ].includes(fnnode.name.kind)
-    ) {
-      tokenModel.add(
-        fnnode.name,
-        fnnode.name.getText(),
-      )
-    }
-    if (findDefault && options.defaultName) {
-      tokenModel.add(
-        findDefault,
-        options.defaultName || ''
-      )
-    }
-    if (fnnode.kind === SyntaxKind.ExportAssignment && options.defaultName) {
-      tokenModel.add(
-        fnnode,
-        options.defaultName || ''
-      )
-    }
+    const fnnode = (node as FunctionDeclaration);
+    const exnode = (node as ExportDeclaration)
+    const exportClause = exnode.exportClause
 
-    if (exportClause) {
+    const modifiers = fnnode.modifiers;
+    const findExpord = modifiers?.find(mod => mod.kind === SyntaxKind.ExportKeyword);
+    const findDefault = modifiers?.find(mod => mod.kind === SyntaxKind.DefaultKeyword);
+
+    if (findExpord) {
+      if (fnnode.name) {
+        tokenModel.add(
+          fnnode.name,
+          fnnode.name.getText()
+        )
+      }
+      if (findDefault && options.defaultName) {
+        tokenModel.add(
+          findDefault,
+          options.defaultName
+        )
+      }
+      const declarations: VariableDeclaration[] = (fnnode as any).declarationList?.declarations;
+      if (declarations?.length) {
+        declarations.forEach((declaration: VariableDeclaration) => {
+          tokenModel.add(
+            declaration.name,
+            declaration.name.getText()
+          )
+        });
+      }
+
+    } else if (exportClause) {
       if ((exportClause as NamespaceExport).name) {
         const name = (exportClause as NamespaceExport).name
         tokenModel.add(
@@ -151,6 +141,12 @@ function getExportKeyword(
           name.getText()
         )
       }
+    }
+    if (node.kind === SyntaxKind.ExportAssignment) {
+      tokenModel.add(
+        node,
+        options.defaultName || ''
+      )
     }
   } catch (error) {
   }
