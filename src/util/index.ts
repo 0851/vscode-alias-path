@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path'
 import { Uri } from 'vscode'
+import micromatch from 'micromatch';
+
 export function readJsonFile<T extends Object = Record<string, any>>(jsonPath: string): undefined | T {
   if (!fs.existsSync(jsonPath)) {
     return undefined
@@ -94,6 +96,7 @@ export function getRealPaths(
   let filepaths: string[] = [];
   const alias = config.alias || {};
   const allowedExt = config.allowedExt || [];
+  const excludeGlobs = config.excludeGlobs || [];
 
   Object.keys(alias)
     .map(aliasKey => {
@@ -106,13 +109,33 @@ export function getRealPaths(
         relativePath: config.relativeUri.fsPath,
       }));
     })
-    filepaths = [...new Set(filepaths)]
-  return filepaths.map(fp=> {
-    return {
-      filepath: fp,
-      importDefaultName: config.importDefaultName,
+  filepaths = [...new Set(filepaths)]
+  return filepaths
+    .filter(fp => {
+      return !isExcluded(fp, excludeGlobs)
+    })
+    .map(fp => {
+      return {
+        filepath: fp,
+        importDefaultName: config.importDefaultName,
+      }
+    });
+}
+
+export function isExcluded(uri: string, excludes: string[]) {
+  return micromatch.isMatch(uri, excludes)
+}
+
+export function addGlobalExcludes(source?: Record<string, boolean>) {
+  const target: string[] = [];
+  const obj = source || {}
+  Object.keys(obj).map(function (glob) {
+    if (obj.hasOwnProperty(glob) && obj[glob] === true) {
+      target.push(glob)
     }
   });
+
+  return target;
 }
 
 export function getDepends(text: string): DependItem[] {
@@ -129,7 +152,7 @@ export function getDepends(text: string): DependItem[] {
       if (m.index === reg.lastIndex) {
         reg.lastIndex++;
       }
-      const groups = ((m as any).groups || {} ) as Record<string, string>;
+      const groups = ((m as any).groups || {}) as Record<string, string>;
       items.push({
         filepath: groups.filepath,
         importDefaultName: groups.dname,

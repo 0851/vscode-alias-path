@@ -11,7 +11,7 @@ import {
   Uri,
   workspace
 } from 'vscode'
-import { getRealPaths, getDepends, hyphenToPascal } from '../util';
+import { getRealPaths, getDepends, hyphenToPascal, isExcluded } from '../util';
 
 export class AliasPathDefinitionProvider implements DefinitionProvider {
   configProvider: ConfigProvider
@@ -29,13 +29,18 @@ export class AliasPathDefinitionProvider implements DefinitionProvider {
     token: CancellationToken): ProviderResult<Definition | DefinitionLink[]> {
     const regPath = /(['"])([^\1]+?)\1/;
     const range = document.getWordRangeAtPosition(position, regPath);
+    const config = this.configProvider.getConfig(document.uri);
+
+    if (isExcluded(document.uri.fsPath, config.excludeGlobs || [])) {
+      return
+    }
     if (range) {
       const inputPath = document.getText(range);
       const rootUri = workspace.getWorkspaceFolder(document.uri)?.uri
       const realPaths = getRealPaths(
         inputPath.slice(1, -1),
         {
-          ...this.configProvider.getConfig(document.uri),
+          ...config,
           rootUri: rootUri,
           relativeUri: document.uri,
         }
@@ -81,7 +86,7 @@ export class AliasPathDefinitionProvider implements DefinitionProvider {
     })
 
     if (findTokens) {
-      return findTokens.map(token=>{
+      return findTokens.map(token => {
         return new Location(
           Uri.file(token.filepath),
           token.start

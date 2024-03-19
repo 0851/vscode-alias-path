@@ -28,6 +28,16 @@
           },
           "description": "你可以使用${cwd}代表当前工作目录的绝对路径"
         },
+        "aliaspath.excludeGlobs": {
+          "type": "array",
+          "default": [
+            "**/node_modules/**",
+            "**/.git/**",
+            "**/.cache/**",
+            "**/dist/**"
+          ],
+          "description": "忽略的目录"
+        },
         "aliaspath.activeLanguages": {
           "type": [
             "array",
@@ -73,6 +83,7 @@
   },
   "devDependencies": {
     "@types/css-tree": "^2.3.6",
+    "@types/micromatch": "^4.0.6",
     "@types/node": "^8.10.25",
     "ts-node": "^8.4.1",
     "vscode": "^1.1.37"
@@ -84,6 +95,7 @@
   "homepage": "https://github.com/0851/vscode-alias-path/blob/master/README.md",
   "dependencies": {
     "css-tree": "^2.3.1",
+    "micromatch": "^4.0.5",
     "typescript": "^5.3.3"
   }
 }

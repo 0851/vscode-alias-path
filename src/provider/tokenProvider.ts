@@ -6,7 +6,7 @@ import {
   workspace,
   Position
 } from 'vscode';
-import { debounce, getDepends, getFileMBSize, getRealPaths } from '../util';
+import { debounce, getDepends, getFileMBSize, getRealPaths, isExcluded } from '../util';
 import tryCssTokens from '../util/parser/css'
 import tryTypescriptTokens from '../util/parser/typescript'
 
@@ -89,10 +89,16 @@ export class AliasPathTokensProvider implements TokenProvider {
       const document = e?.document;
       this.tokens = [];
       if (!document) return;
+
       const rootUri = workspace.getWorkspaceFolder(document.uri)?.uri;
       const content = document.getText();
       const depends = getDepends(content);
       const config = this.configProvider.getConfig(document.uri)
+
+      if (isExcluded(document.uri.fsPath, config.excludeGlobs || [])) {
+        return
+      }
+
       const dependsPaths: DependPathItem[] = [{
         filepath: document.uri.fsPath,
       }];

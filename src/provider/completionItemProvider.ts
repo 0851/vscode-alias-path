@@ -9,6 +9,8 @@ import {
   CompletionItem
 } from 'vscode'
 
+import { isExcluded } from '../util';
+
 export const VueTokens = [
   "extend",
   "nextTick",
@@ -105,6 +107,12 @@ export class AliasPathCompletionItemProvider implements CompletionItemProvider {
     token: CancellationToken,
     context: CompletionContext): ProviderResult<CompletionItem[]> {
     // console.log(token, '=====token====');
+    const config = this.configProvider.getConfig(document.uri);
+
+    if (isExcluded(document.uri.fsPath, config.excludeGlobs || [])) {
+      return
+    }
+
     const regKeyWord = /[$_a-zA-Z]+[\w_-]*/;
     const range = document.getWordRangeAtPosition(position, regKeyWord);
     const keyword = document.getText(range);

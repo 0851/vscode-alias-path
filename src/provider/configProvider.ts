@@ -8,7 +8,7 @@ import {
 
 import path from 'path';
 
-import { debounce, readJsonFile } from '../util'
+import { debounce, readJsonFile, addGlobalExcludes } from '../util'
 
 type WorkspaceConfig = (Pick<Config, 'allowedExt' | 'alias' | 'maxDependFileSize'> | undefined)
 
@@ -98,14 +98,19 @@ export class AliasPathConfigProvider implements ConfigProvider {
 
     let activeLanguages = config.get<DocumentSelector>('activeLanguages')!;
     let autoSuggestion = config.get<boolean>('autoSuggestion')!;
+    let excludeGlobs = config.get<string[]>('excludeGlobs')! || [];
     let allowedExt = workspaceConfig?.allowedExt || config.get<string[]>('allowedExt')!;
     let maxDependFileSize = workspaceConfig?.maxDependFileSize || config.get<number>('maxDependFileSize')!;
     let alias = workspaceConfig?.alias || config.get<Record<string, string>>('alias')!;
+
+    excludeGlobs.push(...addGlobalExcludes(workspace.getConfiguration('search').get<Record<string, boolean>>('exclude')))
+    excludeGlobs.push(...addGlobalExcludes(workspace.getConfiguration('files').get<Record<string, boolean>>('exclude')))
 
     return {
       activeLanguages: activeLanguages,
       autoSuggestion: autoSuggestion,
       allowedExt: allowedExt,
+      excludeGlobs: excludeGlobs,
       maxDependFileSize: maxDependFileSize,
       alias: alias,
     }
