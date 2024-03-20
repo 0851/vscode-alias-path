@@ -37,7 +37,7 @@ command + left click to jump to the file. Aliases are supported
     "default": 2,
     "description": "Dependent file Maximum size m b"
   },
-  "aliaspath.allowedExt": {
+  "aliaspath.allowedIgnoreExt": {
     "type": "array",
     "default": [
       "js",

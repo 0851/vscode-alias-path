@@ -2,7 +2,7 @@
   "name": "vscode-alias-path",
   "displayName": "alias-path",
   "description": "vscode alias path go to definition",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "0851",
   "engines": {
     "vscode": "^1.30.0"
@@ -59,7 +59,30 @@
           "default": 2,
           "description": "依赖文件最大大小 MB"
         },
-        "aliaspath.allowedExt": {
+        "aliaspath.cssTokenExt": {
+          "type": "array",
+          "default": [
+            "css",
+            "less",
+            "sass",
+            "styl",
+            "scss",
+            "vue"
+          ],
+          "description": "css文件扩展"
+        },
+        "aliaspath.jsTokenExt": {
+          "type": "array",
+          "default": [
+            "js",
+            "jsx",
+            "ts",
+            "tsx",
+            "vue"
+          ],
+          "description": "css文件扩展"
+        },
+        "aliaspath.allowedIgnoreExt": {
           "type": "array",
           "default": [
             "js",

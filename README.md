@@ -37,7 +37,7 @@ command + left click 跳转到文件 ，支持别名
     "default": 2,
     "description": "依赖文件最大大小 MB"
   },
-  "aliaspath.allowedExt": {
+  "aliaspath.allowedIgnoreExt": {
     "type": "array",
     "default": [
       "js",

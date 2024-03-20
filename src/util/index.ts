@@ -95,7 +95,7 @@ export function getRealPaths(
   }): DependPathItem[] {
   let filepaths: string[] = [];
   const alias = config.alias || {};
-  const allowedExt = config.allowedExt || [];
+  const allowedIgnoreExt = config.allowedIgnoreExt || [];
   const excludeGlobs = config.excludeGlobs || [];
 
   Object.keys(alias)
@@ -104,7 +104,7 @@ export function getRealPaths(
         fsPath: filePath,
         aliasKey,
         aliasValue: alias[aliasKey],
-        exts: allowedExt,
+        exts: allowedIgnoreExt,
         rootPath: config.rootUri?.fsPath || '',
         relativePath: config.relativeUri.fsPath,
       }));

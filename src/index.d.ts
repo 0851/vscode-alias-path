@@ -1,7 +1,9 @@
 declare type Config = Partial<{
   activeLanguages: import('vscode').DocumentSelector,
   alias: Record<string, string>
-  allowedExt: string[]
+  allowedIgnoreExt: string[]
+  cssTokenExt: string[]
+  jsTokenExt: string[]
   excludeGlobs: string[]
   autoSuggestion: boolean
   maxDependFileSize: number

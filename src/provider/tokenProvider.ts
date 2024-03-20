@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import {
   ExtensionContext,
   window,
@@ -41,6 +42,8 @@ export class TokenModel {
 export function getTokens(filepath: string,
   config: {
     maxfsmbsize: number,
+    jsTokenExt?: string[],
+    cssTokenExt?: string[],
     importDefaultName?: string
   }): TokenItem[] {
   if (!fs.existsSync(filepath)
@@ -53,13 +56,17 @@ export function getTokens(filepath: string,
     return [];
   }
 
+  const ext = path.extname(filepath).replace(/^\./, '');
+  const iscss = config.cssTokenExt?.includes(ext);
+  const isjs = config.jsTokenExt?.includes(ext);
   const content = fs.readFileSync(filepath, 'utf-8');
-
-  const tokens = [
-    ...tryTypescriptTokens(filepath, content, config.importDefaultName),
-    ...tryCssTokens(filepath, content, config.importDefaultName)
-  ];
-
+  const tokens = [];
+  if (iscss) {
+    tokens.push(...tryCssTokens(filepath, content, config.importDefaultName))
+  }
+  if (isjs) {
+    tokens.push(...tryTypescriptTokens(filepath, content, config.importDefaultName))
+  }
   return tokens
 }
 
@@ -119,6 +126,8 @@ export class AliasPathTokensProvider implements TokenProvider {
           realpathitem.filepath,
           {
             maxfsmbsize: config.maxDependFileSize || 2,
+            cssTokenExt: config.cssTokenExt,
+            jsTokenExt: config.jsTokenExt,
             importDefaultName: realpathitem.importDefaultName
           }
         ));

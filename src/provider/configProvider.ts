@@ -10,7 +10,7 @@ import path from 'path';
 
 import { debounce, readJsonFile, addGlobalExcludes } from '../util'
 
-type WorkspaceConfig = (Pick<Config, 'allowedExt' | 'alias' | 'maxDependFileSize'> | undefined)
+type WorkspaceConfig = (Pick<Config, 'allowedIgnoreExt' | 'jsTokenExt' | 'cssTokenExt' | 'alias' | 'maxDependFileSize'> | undefined)
 
 export class AliasPathConfigProvider implements ConfigProvider {
   subscriptions: Disposable[] = []
@@ -74,7 +74,7 @@ export class AliasPathConfigProvider implements ConfigProvider {
     }
     this.workspaceConfigList[rootindex] = {
       alias: config.alias,
-      allowedExt: config.allowedExt,
+      allowedIgnoreExt: config.allowedIgnoreExt,
       maxDependFileSize: config.maxDependFileSize,
     }
   }
@@ -99,7 +99,9 @@ export class AliasPathConfigProvider implements ConfigProvider {
     let activeLanguages = config.get<DocumentSelector>('activeLanguages')!;
     let autoSuggestion = config.get<boolean>('autoSuggestion')!;
     let excludeGlobs = config.get<string[]>('excludeGlobs')! || [];
-    let allowedExt = workspaceConfig?.allowedExt || config.get<string[]>('allowedExt')!;
+    let allowedIgnoreExt = workspaceConfig?.allowedIgnoreExt || config.get<string[]>('allowedIgnoreExt')!;
+    let cssTokenExt = workspaceConfig?.cssTokenExt || config.get<string[]>('cssTokenExt')!;
+    let jsTokenExt = workspaceConfig?.jsTokenExt || config.get<string[]>('jsTokenExt')!;
     let maxDependFileSize = workspaceConfig?.maxDependFileSize || config.get<number>('maxDependFileSize')!;
     let alias = workspaceConfig?.alias || config.get<Record<string, string>>('alias')!;
 
@@ -109,9 +111,11 @@ export class AliasPathConfigProvider implements ConfigProvider {
     return {
       activeLanguages: activeLanguages,
       autoSuggestion: autoSuggestion,
-      allowedExt: allowedExt,
+      allowedIgnoreExt: allowedIgnoreExt,
       excludeGlobs: excludeGlobs,
       maxDependFileSize: maxDependFileSize,
+      cssTokenExt: cssTokenExt,
+      jsTokenExt: jsTokenExt,
       alias: alias,
     }
   }
